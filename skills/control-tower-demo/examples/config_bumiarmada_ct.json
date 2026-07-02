@@ -1,0 +1,8 @@
+{
+  "clientName": "Bumi Armada",
+  "logo": "logo_bumiarmada.png",
+  "theme": { "primary": "#232e83", "accent": "#1fb25a", "neutral": "#bcbdc0" },
+  "font": { "family": "Heebo", "googleUrl": "https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;900&display=swap" },
+  "output": "Demo_BumiArmada_ControlTower.html",
+  "projectName": "demobumiarmadacontroltower"
+}

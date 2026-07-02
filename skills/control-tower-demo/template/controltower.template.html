@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{CLIENT_NAME}} — Project Execution Control Tower · Trees Engineering</title>
+<link href="{{FONT_URL}}" rel="stylesheet">
+<style>
+:root{
+  --navy:#232e83; --navy-dark:#1a2363; --navy-light:#5b64ad;
+  --green:#1fb25a; --grey:#bcbdc0;
+  --bg:#f4f5f9; --card:#ffffff; --ink:#1c2333; --muted:#6b7280;
+  --red:#d64545; --amber:#e8a13c; --line:#e5e7ef;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'{{FONT_FAMILY}}',sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+a{color:var(--navy)}
+
+/* ---------- layout ---------- */
+.topbar{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:10px 20px;position:sticky;top:0;z-index:20}
+.topbar img.logo{height:34px}
+.topbar .divider{width:1px;height:30px;background:var(--line)}
+.topbar .apptitle{font-weight:700;font-size:15px;color:var(--navy)}
+.topbar .apptitle small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.topbar .spacer{flex:1}
+.rolewrap{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.rolewrap select{font-family:inherit;font-size:13px;font-weight:600;color:var(--navy);border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer}
+.tebadge{background:var(--navy);color:#fff;font-size:11px;font-weight:700;border-radius:8px;padding:7px 12px;white-space:nowrap}
+.tebadge span{color:#9fe8bf}
+
+.shell{display:flex;min-height:calc(100vh - 55px)}
+.side{width:222px;background:var(--navy);color:#fff;padding:18px 0;flex-shrink:0;display:flex;flex-direction:column}
+.side .navlabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8f96c9;padding:0 20px;margin:14px 0 6px}
+.nav{display:flex;flex-direction:column}
+.nav button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13.5px;font-weight:500;color:#cdd2ef;border-left:3px solid transparent}
+.nav button .ic{width:18px;text-align:center;opacity:.9}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button.active{background:rgba(255,255,255,.10);color:#fff;border-left-color:var(--green);font-weight:700}
+.nav button .roledot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:auto;display:none}
+.nav button.rolefocus .roledot{display:block}
+.side .sidefoot{margin-top:auto;padding:16px 20px;font-size:10.5px;color:#8f96c9;line-height:1.5;border-top:1px solid rgba(255,255,255,.12)}
+.side .sidefoot b{color:#fff}
+
+.main{flex:1;padding:22px 26px;max-width:1220px}
+.view{display:none}
+.view.active{display:block}
+.viewhead{margin-bottom:16px}
+.viewhead h1{font-size:20px;font-weight:900;color:var(--navy)}
+.viewhead p{color:var(--muted);font-size:13px;margin-top:2px}
+.rolenote{display:inline-block;margin-top:8px;background:#eef7f1;border:1px solid #cdeeda;color:#177a42;font-size:12px;font-weight:600;border-radius:8px;padding:5px 10px}
+
+/* ---------- cards & tables ---------- */
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.kpi .val{font-size:24px;font-weight:900;color:var(--navy)}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .delta{font-size:12px;font-weight:700;margin-top:6px}
+.good{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:20px;padding:2px 10px}
+.pill.g{background:#e5f6ec;color:#177a42}.pill.a{background:#fdf3e2;color:#a86b12}.pill.r{background:#fbe9e9;color:#a83232}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #f0f1f6;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.bar{height:7px;background:#edeef4;border-radius:4px;overflow:hidden;min-width:70px}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--navy-light)}
+.trend{font-weight:900}
+
+/* AI blocks */
+.aibrief{background:linear-gradient(135deg,#232e83 0%,#2c3a9e 100%);color:#fff;border:none}
+.aibrief h3{color:#aeb6e8}
+.aibrief .stamp{font-size:11px;color:#9fe8bf;font-weight:700;margin-bottom:8px}
+.aibrief ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5}
+.aibrief li{padding-left:16px;position:relative}
+.aibrief li::before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.aibrief .decisions li::before{background:var(--amber)}
+.aibrief h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#aeb6e8;margin:14px 0 8px}
+.signal{border-left:4px solid var(--navy);background:#fff;border-radius:10px;border:1px solid var(--line);border-left:4px solid var(--amber);padding:14px;margin-bottom:12px}
+.signal.red{border-left-color:var(--red)}
+.signal.green{border-left-color:var(--green)}
+.signal .stag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.signal p.body{margin:6px 0;font-size:13.5px;line-height:1.5}
+.signal .src{font-size:11.5px;color:var(--muted);font-style:italic}
+.signal .actions{margin-top:10px;display:flex;gap:8px}
+.btn{font-family:inherit;font-size:12px;font-weight:700;border-radius:8px;padding:6px 14px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn:hover{opacity:.88}
+
+/* chat */
+.chatbox{display:flex;flex-direction:column;height:520px}
+.chatlog{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:6px 2px}
+.msg{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;white-space:pre-line}
+.msg.user{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.ai b{color:var(--navy)}
+.chatin{display:flex;gap:8px;margin-top:12px}
+.chatin input{flex:1;font-family:inherit;font-size:13.5px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;outline:none}
+.chatin input:focus{border-color:var(--navy-light)}
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.suggestions button{font-family:inherit;font-size:12px;border:1px solid var(--line);border-radius:20px;background:#fff;padding:6px 12px;cursor:pointer;color:var(--navy);font-weight:600}
+.suggestions button:hover{background:#eef0fa}
+
+/* misc */
+.split{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.split3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mt{margin-top:14px}
+.legend{display:flex;gap:16px;font-size:11.5px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.footer{padding:26px;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.6}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;box-shadow:0 8px 30px rgba(20,25,70,.35);transition:transform .3s;z-index:50;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.scorecards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.sc .name{font-weight:800;font-size:14px;color:var(--navy)}
+.sc .scope{font-size:12px;color:var(--muted);margin-bottom:10px}
+.sc .row{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px dashed #eef0f6}
+.sc .row:last-child{border-bottom:none}
+.heat{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+.heat div{aspect-ratio:1.6;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+
+@media(max-width:860px){
+  .shell{flex-direction:column}
+  .side{width:100%;flex-direction:column;padding:8px 0}
+  .nav{flex-direction:row;overflow-x:auto}
+  .nav button{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:10px 14px}
+  .nav button.active{border-left:none;border-bottom-color:var(--green)}
+  .side .sidefoot,.side .navlabel{display:none}
+  .split,.split3{grid-template-columns:1fr}
+  .main{padding:16px 14px}
+  .topbar{flex-wrap:wrap;gap:10px}
+  .topbar .apptitle small{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img class="logo" src="{{LOGO_SRC}}" alt="{{CLIENT_NAME}}">
+  <div class="divider"></div>
+  <div class="apptitle">Project Execution Control Tower<small>Cost · Schedule · Procurement · Risk — one live picture</small></div>
+  <div class="spacer"></div>
+  <div class="rolewrap">
+    <span>Viewing&nbsp;as</span>
+    <select id="roleSel" onchange="setRole(this.value)">
+      <option value="pd">Project Director</option>
+      <option value="pmo">PMO / Planning Lead</option>
+      <option value="scm">SCM Manager</option>
+      <option value="proc">Procurement Manager</option>
+    </select>
+  </div>
+  <div class="tebadge">Powered by <span>Trees Engineering AI</span></div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="navlabel">FPSO Kencana Conversion</div>
+    <nav class="nav" id="nav">
+      <button data-v="command" class="active"><span class="ic">◉</span> Command Center <span class="roledot"></span></button>
+      <button data-v="cost"><span class="ic">$</span> Cost Control <span class="roledot"></span></button>
+      <button data-v="schedule"><span class="ic">▤</span> Schedule &amp; Progress <span class="roledot"></span></button>
+      <button data-v="scm"><span class="ic">⛓</span> Procurement &amp; SCM <span class="roledot"></span></button>
+      <button data-v="risk"><span class="ic">⚠</span> Risk Register <span class="roledot"></span></button>
+      <button data-v="assistant"><span class="ic">✦</span> AI Assistant <span class="roledot"></span></button>
+    </nav>
+    <div class="sidefoot">
+      Built on your existing systems, <b>Primavera P6, ERP, cost sheets, contracts &amp; correspondence</b>. AI prepares, your team decides.<br><br>
+      <b>Trees Engineering</b> · Trees OS
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ COMMAND CENTER ============ -->
+    <section class="view active" id="v-command">
+      <div class="viewhead">
+        <h1>Command Center — FPSO Kencana Conversion</h1>
+        <p>Client: PetroDelta E&amp;P · Field: offshore East Kalimantan · Yard: Batam Marine Heavy Industries · First oil target: Q4 2028 · Month 14 of 34</p>
+        <span class="rolenote" id="roleNote">Project Director view: one page, whole project, money attached to every alert.</span>
+      </div>
+
+      <div class="grid kpis">
+        <div class="card kpi"><h3>VOWD</h3><div class="val">US$296.4M</div><div class="sub">43.3% of US$685M budget</div><div class="delta good">+ $18.2M this month</div></div>
+        <div class="card kpi"><h3>CPI</h3><div class="val warn">0.96</div><div class="sub">Cost performance index</div><div class="delta warn">▼ 0.01 vs last month</div></div>
+        <div class="card kpi"><h3>SPI</h3><div class="val bad">0.91</div><div class="sub">Schedule performance index</div><div class="delta bad">▼ 0.02 vs last month</div></div>
+        <div class="card kpi"><h3>EAC</h3><div class="val">US$711M</div><div class="sub">Forecast at completion</div><div class="delta bad">– $26M vs budget</div></div>
+        <div class="card kpi"><h3>Progress</h3><div class="val">44.1%</div><div class="sub">claimed · plan 46.0%</div><div class="delta warn">AI-verified: 41.8%</div></div>
+        <div class="card kpi"><h3>Risk exposure</h3><div class="val">US$41.2M</div><div class="sub">23 open risks</div><div class="delta bad">▲ 2 new this week (AI-surfaced)</div></div>
+      </div>
+
+      <div class="split mt">
+        <div class="card">
+          <h3>S-Curve — plan vs verified vs forecast</h3>
+          <svg id="scurve" viewBox="0 0 660 280" width="100%" height="auto"></svg>
+          <div class="legend">
+            <span><i style="background:var(--grey)"></i>Baseline plan</span>
+            <span><i style="background:var(--green)"></i>AI-verified actual</span>
+            <span><i style="background:var(--red)"></i>Forecast (current run-rate)</span>
+          </div>
+        </div>
+        <div class="card aibrief">
+          <h3>AI Weekly Brief</h3>
+          <div class="stamp">Generated Mon 29 Jun 2026, 06:00 · from P6 export, cost sheet v41, 214 e-mails, 9 MOMs, 3 expediting reports</div>
+          <ul>
+            <li>Module M-02 topsides lift completed 4 days early; yard schedule adherence back to 88%.</li>
+            <li>VOWD tracking plan; commitment curve healthy, no cash-flow flag this month.</li>
+            <li>E&amp;I cable pulling started on schedule after Meridian recovery plan.</li>
+          </ul>
+          <h4>Needs a decision</h4>
+          <ul class="decisions">
+            <li>Turret bearing: supplier stopped confirming dates. Expediting visit to Rotterdam recommended this week.</li>
+            <li>PT Sinar invoice #2231: claimed 62% vs verified 54%. Recommend holding US$1.4M pending re-measure.</li>
+            <li>47 open MoCs, 9 unpriced. Engineering hours eroding contingency silently.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card mt">
+        <h3>Portfolio — all execution projects</h3>
+        <table>
+          <thead><tr><th>Project</th><th>Phase</th><th class="num">Budget</th><th class="num">VOWD</th><th class="num">CPI</th><th class="num">SPI</th><th>Health</th></tr></thead>
+          <tbody>
+            <tr><td><b>FPSO Kencana Conversion</b></td><td>Yard execution</td><td class="num">US$685M</td><td class="num">US$296.4M</td><td class="num warn">0.96</td><td class="num bad">0.91</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>Fleet O&amp;M — 4 producing units</td><td>Operations</td><td class="num">US$118M/yr</td><td class="num">US$54.9M</td><td class="num good">1.02</td><td class="num good">0.99</td><td><span class="pill g">On track</span></td></tr>
+            <tr><td>FSU Gas Storage — feasibility</td><td>Pre-FEED</td><td class="num">US$4.2M</td><td class="num">US$1.1M</td><td class="num good">1.00</td><td class="num good">1.04</td><td><span class="pill g">On track</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ COST ============ -->
+    <section class="view" id="v-cost">
+      <div class="viewhead">
+        <h1>Cost Control</h1>
+        <p>Budget vs committed vs VOWD vs forecast, by package. AI reconciles invoices against verified progress and flags leakage.</p>
+      </div>
+
+      <div class="card">
+        <h3>Cost by package — FPSO Kencana</h3>
+        <table>
+          <thead><tr><th>Package</th><th class="num">Budget</th><th class="num">Committed</th><th class="num">VOWD</th><th class="num">EAC</th><th class="num">Var.</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Hull &amp; marine refurbishment</td><td class="num">128.0</td><td class="num">121.4</td><td class="num">96.2</td><td class="num">126.1</td><td class="num good">+1.9</td><td><span class="pill g">On track</span></td></tr>
+            <tr><td>Topsides modules (M-01→M-06)</td><td class="num">214.0</td><td class="num">198.7</td><td class="num">88.4</td><td class="num">231.5</td><td class="num bad">–17.5</td><td><span class="pill r">Over</span></td></tr>
+            <tr><td>Turret &amp; mooring</td><td class="num">96.0</td><td class="num">92.1</td><td class="num">41.3</td><td class="num">101.2</td><td class="num bad">–5.2</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>E&amp;I / telecom</td><td class="num">58.0</td><td class="num">49.8</td><td class="num">18.9</td><td class="num">59.4</td><td class="num warn">–1.4</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>Yard services &amp; scaffolding</td><td class="num">74.0</td><td class="num">61.2</td><td class="num">29.7</td><td class="num">75.8</td><td class="num warn">–1.8</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>Project management &amp; eng.</td><td class="num">67.0</td><td class="num">67.0</td><td class="num">21.9</td><td class="num">69.0</td><td class="num warn">–2.0</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>Contingency (remaining)</td><td class="num">48.0</td><td class="num">—</td><td class="num">—</td><td class="num">48.0</td><td class="num good">drawn 31%</td><td><span class="pill a">Watch</span></td></tr>
+            <tr style="font-weight:800"><td>Total</td><td class="num">685.0</td><td class="num">590.2</td><td class="num">296.4</td><td class="num">711.0</td><td class="num bad">–26.0</td><td><span class="pill a">Watch</span></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:11.5px;color:var(--muted);margin-top:8px">All figures US$M. EAC = AI forecast from current run-rate + committed exposure + open MoC estimate, reviewed by cost control before publication.</p>
+      </div>
+
+      <div class="mt">
+        <div class="viewhead"><h1 style="font-size:16px">AI-flagged cost leakage</h1></div>
+        <div class="signal red">
+          <span class="stag">Invoice vs verified progress · PT Sinar Fabrikasi</span>
+          <p class="body">Invoice #2231 claims <b>62%</b> completion on piping spool fabrication. AI cross-check of the last progress report, spool tracking sheet and yard photos supports <b>54%</b>. Recommend withholding <b>US$1.4M</b> pending joint re-measurement.</p>
+          <p class="src">Sources: invoice #2231 · progress report W26 · spool tracker v18 — 26 Jun 2026</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Flag routed to cost control for validation. AI prepares, your team decides.')">Send to cost control</button><button class="btn" onclick="toast('Dismissed and logged. The model learns from every override.')">Dismiss</button></div>
+        </div>
+        <div class="signal">
+          <span class="stag">Back-charge candidate · welding rework</span>
+          <p class="body">9 of the last 14 NCRs concentrate on Module M-04 spools, same welding procedure, same subcontractor crew. Rework hours to date: 3,410. Estimated recoverable back-charge: <b>US$640k</b>. Draft claim letter prepared.</p>
+          <p class="src">Sources: NCR log · yard timesheets · subcontract clause 14.3 — 24 Jun 2026</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Draft back-charge letter opened for contracts team review.')">Review draft letter</button><button class="btn" onclick="toast('Dismissed and logged.')">Dismiss</button></div>
+        </div>
+        <div class="signal">
+          <span class="stag">Duplicate standby claim · yard services</span>
+          <p class="body">Two standby claims for the same crane outage (14–16 May) appear in both the yard services monthly claim and a separate variation request. Overlap value: <b>US$310k</b>.</p>
+          <p class="src">Sources: claim YS-0455 · VOR-112 — 19 Jun 2026</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Routed to contracts for rejection letter.')">Route to contracts</button><button class="btn" onclick="toast('Dismissed and logged.')">Dismiss</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCHEDULE ============ -->
+    <section class="view" id="v-schedule">
+      <div class="viewhead">
+        <h1>Schedule &amp; Progress</h1>
+        <p>AI reads the P6 export and every subcontractor progress report, reconciles claimed vs verifiable progress, and watches the critical path daily, not monthly.</p>
+      </div>
+
+      <div class="grid kpis">
+        <div class="card kpi"><h3>Critical path drift</h3><div class="val bad">–22 days</div><div class="sub">vs March re-baseline</div><div class="delta bad">▼ 6 days this month</div></div>
+        <div class="card kpi"><h3>Float erosion</h3><div class="val warn">14 activities</div><div class="sub">lost &gt;50% float in 60 days</div><div class="delta warn">3 now near-critical</div></div>
+        <div class="card kpi"><h3>Progress gap</h3><div class="val warn">2.3 pts</div><div class="sub">claimed 44.1% vs verified 41.8%</div><div class="delta warn">gap widening 2 months</div></div>
+        <div class="card kpi"><h3>First oil forecast</h3><div class="val warn">Q4 2028</div><div class="sub">+3 wks vs baseline</div><div class="delta warn">recoverable per AI scenario</div></div>
+      </div>
+
+      <div class="card mt">
+        <h3>Claimed vs AI-verified progress, by subcontractor</h3>
+        <table>
+          <thead><tr><th>Subcontractor</th><th>Scope</th><th class="num">Claimed</th><th class="num">Verified</th><th class="num">Gap</th><th>Evidence used</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>PT Sinar Fabrikasi</b></td><td>Piping spool fab</td><td class="num">62%</td><td class="num">54%</td><td class="num bad">–8</td><td>spool tracker, photos, weld log</td><td><span class="pill r">Dispute</span></td></tr>
+            <tr><td>Meridian E&amp;I</td><td>Cable pulling &amp; termination</td><td class="num">31%</td><td class="num">28%</td><td class="num warn">–3</td><td>cable schedule, test packs</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>BMHI Yard</td><td>Hull steel renewal</td><td class="num">78%</td><td class="num">77%</td><td class="num good">–1</td><td>UT reports, class survey</td><td><span class="pill g">Aligned</span></td></tr>
+            <tr><td>SteelWorks Marine</td><td>Blasting &amp; coating</td><td class="num">70%</td><td class="num">71%</td><td class="num good">+1</td><td>DFT reports, area sign-offs</td><td><span class="pill g">Aligned</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="split mt">
+        <div class="card">
+          <h3>Late subcontractor watchlist</h3>
+          <table>
+            <thead><tr><th>Deliverable</th><th>Owner</th><th class="num">Days late</th><th>Trend</th><th>Critical path?</th></tr></thead>
+            <tbody>
+              <tr><td>Piping spools batch 7–9</td><td>PT Sinar Fabrikasi</td><td class="num bad">18</td><td class="trend bad">▲</td><td><span class="pill r">Yes</span></td></tr>
+              <tr><td>Turret bearing ex-works</td><td>RotaBearing BV</td><td class="num bad">31 (fcst)</td><td class="trend bad">▲</td><td><span class="pill r">Yes</span></td></tr>
+              <tr><td>HPU shop test</td><td>HydraPower Systems</td><td class="num warn">21</td><td class="trend warn">▬</td><td><span class="pill a">8 wks float</span></td></tr>
+              <tr><td>E&amp;I termination crew mob.</td><td>Meridian E&amp;I</td><td class="num warn">9</td><td class="trend good">▼</td><td><span class="pill g">No</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Float erosion — near-critical</h3>
+          <table>
+            <thead><tr><th>Activity</th><th class="num">Float now</th><th class="num">60d ago</th></tr></thead>
+            <tbody>
+              <tr><td>Turret installation window</td><td class="num bad">12d</td><td class="num">41d</td></tr>
+              <tr><td>M-04 module mech. completion</td><td class="num bad">9d</td><td class="num">26d</td></tr>
+              <tr><td>SIT gas compression train A</td><td class="num warn">19d</td><td class="num">33d</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:12px;color:var(--muted);margin-top:10px">AI recomputes float from each P6 export and alerts owners when an activity loses half its float, before it turns critical.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCM ============ -->
+    <section class="view" id="v-scm">
+      <div class="viewhead">
+        <h1>Procurement &amp; SCM</h1>
+        <p>Long-lead items tracked against need-by dates. AI reads every expediting report and supplier e-mail, and flags slippage signals before they hit the critical path.</p>
+      </div>
+
+      <div class="card">
+        <h3>Long-lead item tracker</h3>
+        <table>
+          <thead><tr><th>Item</th><th>Supplier</th><th>PO placed</th><th>Need-by (yard)</th><th>Forecast delivery</th><th class="num">Float</th><th>AI signal</th></tr></thead>
+          <tbody>
+            <tr><td><b>Turret bearing assembly</b></td><td>RotaBearing BV, NL</td><td>Aug 2025</td><td>Feb 2027</td><td class="bad">Mar 2027</td><td class="num bad">–2 wks</td><td><span class="pill r">Escalate</span></td></tr>
+            <tr><td>Gas compression trains ×2</td><td>TurboMach GmbH</td><td>Jun 2025</td><td>Apr 2027</td><td>Mar 2027</td><td class="num good">+5 wks</td><td><span class="pill a">Docs late</span></td></tr>
+            <tr><td>Hydraulic power unit</td><td>HydraPower Systems</td><td>Oct 2025</td><td>Jan 2027</td><td class="warn">Dec 2026</td><td class="num warn">+5 wks ▼</td><td><span class="pill a">Watch</span></td></tr>
+            <tr><td>Fluid swivel stack</td><td>SwivelTech SA</td><td>Sep 2025</td><td>Mar 2027</td><td>Jan 2027</td><td class="num good">+8 wks</td><td><span class="pill g">On track</span></td></tr>
+            <tr><td>Offloading hose reel</td><td>OffMarine Ltd</td><td>Jan 2026</td><td>Jun 2027</td><td>May 2027</td><td class="num good">+4 wks</td><td><span class="pill g">On track</span></td></tr>
+            <tr><td>Pedestal cranes ×2</td><td>LiftCo Marine</td><td>Nov 2025</td><td>May 2027</td><td>Mar 2027</td><td class="num good">+9 wks</td><td><span class="pill g">On track</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt">
+        <div class="viewhead"><h1 style="font-size:16px">AI expediting signals</h1></div>
+        <div class="signal red">
+          <span class="stag">Language drift · RotaBearing BV</span>
+          <p class="body">The last <b>2 expediting reports contain no confirmed ex-works date</b>. Every previous report stated one. Supplier responses have shifted from "confirmed" to "targeting". Pattern matches pre-slip behaviour on 3 historical POs. Recommend expediting visit + activating penalty clause notice window.</p>
+          <p class="src">Sources: expediting reports #13, #14 · e-mail thread RB-PO-0881 — 24 Jun 2026</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Expediting visit request drafted for SCM Manager approval.')">Draft expediting visit</button><button class="btn" onclick="toast('Dismissed and logged.')">Dismiss</button></div>
+        </div>
+        <div class="signal">
+          <span class="stag">Documentation lag · TurboMach GmbH</span>
+          <p class="body">Hardware on schedule, but <b>vendor documentation is 6 weeks behind</b> the document register. Mechanical completion of the compression module needs those dossiers. Flagged before it becomes the hidden critical path.</p>
+          <p class="src">Sources: VDRL v9 · document control log — 22 Jun 2026</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Reminder pack sent to vendor doc controller, cc package engineer.')">Chase documentation</button><button class="btn" onclick="toast('Dismissed and logged.')">Dismiss</button></div>
+        </div>
+      </div>
+
+      <div class="mt">
+        <div class="viewhead"><h1 style="font-size:16px">Subcontractor scorecards</h1></div>
+        <div class="scorecards">
+          <div class="card sc">
+            <div class="name">PT Sinar Fabrikasi</div><div class="scope">Piping spool fabrication · US$21.4M</div>
+            <div class="row"><span>On-time delivery</span><b class="bad">71%</b></div>
+            <div class="row"><span>Open NCRs</span><b class="bad">14</b></div>
+            <div class="row"><span>Claims submitted</span><b class="warn">4 (US$2.1M)</b></div>
+            <div class="row"><span>Progress integrity</span><b class="bad">–8 pts</b></div>
+            <div class="row"><span>Trend</span><b class="bad">▲ deteriorating</b></div>
+          </div>
+          <div class="card sc">
+            <div class="name">Meridian E&amp;I</div><div class="scope">E&amp;I installation · US$14.8M</div>
+            <div class="row"><span>On-time delivery</span><b class="warn">84%</b></div>
+            <div class="row"><span>Open NCRs</span><b class="warn">6</b></div>
+            <div class="row"><span>Claims submitted</span><b class="good">1 (US$0.2M)</b></div>
+            <div class="row"><span>Progress integrity</span><b class="warn">–3 pts</b></div>
+            <div class="row"><span>Trend</span><b class="good">▼ recovering</b></div>
+          </div>
+          <div class="card sc">
+            <div class="name">SteelWorks Marine</div><div class="scope">Blasting &amp; coating · US$9.6M</div>
+            <div class="row"><span>On-time delivery</span><b class="good">92%</b></div>
+            <div class="row"><span>Open NCRs</span><b class="good">2</b></div>
+            <div class="row"><span>Claims submitted</span><b class="good">0</b></div>
+            <div class="row"><span>Progress integrity</span><b class="good">+1 pt</b></div>
+            <div class="row"><span>Trend</span><b class="good">▬ stable</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RISK ============ -->
+    <section class="view" id="v-risk">
+      <div class="viewhead">
+        <h1>Risk Register — living, not monthly</h1>
+        <p>AI scans correspondence, MOMs, NCR logs and site reports for emerging risk signals, drafts the register entry, and a human validates. No more Excel updated the night before the review.</p>
+      </div>
+
+      <div class="split">
+        <div class="card">
+          <h3>Top risks by exposure</h3>
+          <table>
+            <thead><tr><th>Risk</th><th>Owner</th><th class="num">P</th><th class="num">Exposure</th><th>Trend</th></tr></thead>
+            <tbody>
+              <tr><td>Turret bearing slips beyond float</td><td>SCM</td><td class="num">60%</td><td class="num">US$9.8M</td><td class="trend bad">▲</td></tr>
+              <tr><td>Topside weight growth &gt;3% → mooring re-verify</td><td>Engineering</td><td class="num">45%</td><td class="num">US$8.5M</td><td class="trend warn">▬</td></tr>
+              <tr><td>Piping sub financial distress</td><td>Contracts</td><td class="num">40%</td><td class="num">US$8.2M</td><td class="trend bad">▲ new</td></tr>
+              <tr><td>Batam skilled labour shortage Q4</td><td>Yard / HR</td><td class="num">55%</td><td class="num">US$6.2M</td><td class="trend warn">▬</td></tr>
+              <tr><td>Tow-out weather window Q3 2028</td><td>Marine ops</td><td class="num">30%</td><td class="num">US$5.4M</td><td class="trend good">▼</td></tr>
+              <tr><td>MoC backlog erodes engineering hours</td><td>PMO</td><td class="num">65%</td><td class="num">US$3.1M</td><td class="trend bad">▲</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Exposure heat map</h3>
+          <div class="heat" id="heat"></div>
+          <p style="font-size:11.5px;color:var(--muted);margin-top:10px">Probability → right, impact → up. Numbers = open risks per cell. Recomputed on every register change, not once a month.</p>
+        </div>
+      </div>
+
+      <div class="mt">
+        <div class="viewhead"><h1 style="font-size:16px">AI-surfaced signals awaiting validation</h1></div>
+        <div class="signal red">
+          <span class="stag">New risk draft · subcontractor financial distress</span>
+          <p class="body">PT Sinar Fabrikasi: payment term renegotiation request (2nd in 90 days), 11-day invoice acceleration pattern, and a supplier of theirs contacted BMHI directly about unpaid steel. Drafted register entry with mitigation options: step-in rights review, parallel-source batch 10+, payment protection.</p>
+          <p class="src">Sources: e-mail 21 Jun · AP ledger pattern · yard MOM 18 Jun</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Register entry submitted to Contracts owner for validation.')">Validate → register</button><button class="btn" onclick="toast('Dismissed and logged. The model learns from every override.')">Dismiss</button></div>
+        </div>
+        <div class="signal">
+          <span class="stag">Scope creep signal · client request without MoC</span>
+          <p class="body">MOM of 18 Jun: PetroDelta requested a water-injection tie-in study "<i>without schedule impact</i>". No MoC raised, no cost code opened, engineering hours already being booked to overhead. Recommend raising MoC-048 before hours accumulate.</p>
+          <p class="src">Sources: MOM 18 Jun · timesheet codes W25–26</p>
+          <div class="actions"><button class="btn primary" onclick="toast('MoC-048 draft created and routed to PMO.')">Draft MoC-048</button><button class="btn" onclick="toast('Dismissed and logged.')">Dismiss</button></div>
+        </div>
+        <div class="signal green">
+          <span class="stag">Risk retirement candidate</span>
+          <p class="body">Hull steel renewal is 77% complete with UT results inside class tolerance for 9 consecutive weeks. Risk R-011 "excess steel renewal scope" can likely be closed, releasing <b>US$2.3M</b> of contingency.</p>
+          <p class="src">Sources: UT reports W17–W26 · class surveyor notes</p>
+          <div class="actions"><button class="btn primary" onclick="toast('Closure recommendation sent to risk owner.')">Recommend closure</button><button class="btn" onclick="toast('Kept open and logged.')">Keep open</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ASSISTANT ============ -->
+    <section class="view" id="v-assistant">
+      <div class="viewhead">
+        <h1>AI Assistant</h1>
+        <p>Ask the project anything. Answers come from your own P6, cost sheets, contracts and correspondence, with sources, never from thin air.</p>
+      </div>
+      <div class="card chatbox">
+        <div class="chatlog" id="chatlog">
+          <div class="msg user">What changed on Kencana this week?</div>
+          <div class="msg ai"><b>Week 27 vs week 26:</b>
+• M-02 topsides lift completed 4 days early, yard adherence back to 88%.
+• Critical path drift worsened 22 → 24 days, driver: piping spools batch 7–9 (PT Sinar, 18 days late).
+• New risk drafted: PT Sinar financial distress signals (3 independent sources).
+• Turret bearing: 2nd consecutive expediting report without a confirmed date. Visit recommended.
+• Cost: US$1.4M invoice hold recommended, US$640k back-charge drafted.
+
+Sources: P6 export 28 Jun · cost sheet v41 · expediting #14 · NCR log</div>
+        </div>
+        <div class="chatin">
+          <input id="chatInput" placeholder="Ask about cost, schedule, suppliers, risk…" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn primary" onclick="sendChat()">Ask</button>
+        </div>
+        <div class="suggestions">
+          <button onclick="askSuggestion(0)">Which subcontractors put first oil at risk?</button>
+          <button onclick="askSuggestion(1)">Draft the monthly steering committee summary</button>
+          <button onclick="askSuggestion(2)">Where are we losing money silently?</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="footer">
+  Demonstration environment prepared by <b>Trees Engineering</b> (AI practice) for discussion with {{CLIENT_NAME}}.<br>
+  All project names, companies, figures and events are <b>fictitious</b>, generated to illustrate the concept. The real system is designed around your processes, after the audit, not before.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- navigation ---------- */
+const nav = document.getElementById('nav');
+nav.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  nav.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+b.dataset.v).classList.add('active');
+  window.scrollTo({top:0});
+});
+
+/* ---------- roles ---------- */
+const ROLES = {
+  pd:   {home:'command', focus:['command','risk','cost'], note:'Project Director view: one page, whole project, money attached to every alert.'},
+  pmo:  {home:'schedule', focus:['schedule','command','risk'], note:'PMO view: P6 reconciliation, float erosion and progress integrity, refreshed on every export.'},
+  scm:  {home:'scm', focus:['scm','schedule','cost'], note:'SCM view: long-lead float, expediting signals and subcontractor performance in one place.'},
+  proc: {home:'scm', focus:['scm','cost'], note:'Procurement view: PO exposure, invoice vs progress mismatches and claims early-warning.'}
+};
+function setRole(r){
+  const cfg = ROLES[r];
+  nav.querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('rolefocus', cfg.focus.includes(b.dataset.v));
+  });
+  document.getElementById('roleNote').textContent = cfg.note;
+  nav.querySelector(`button[data-v="${cfg.home}"]`).click();
+}
+setRole('pd');
+
+/* ---------- s-curve ---------- */
+(function(){
+  const svg = document.getElementById('scurve');
+  const W=660,H=280,L=42,R=14,T=16,B=34;
+  const plan=[[0,0],[2,2],[4,6],[6,12],[8,20],[10,30],[12,38],[14,46],[16,54],[18,62],[20,70],[22,77],[24,83],[26,88],[28,92],[30,95],[32,98],[34,100]];
+  const act=[[0,0],[2,1.5],[4,5],[6,10],[8,17],[10,26],[12,34],[14,41.8]];
+  const fcst=[[14,41.8],[16,50],[18,58],[20,66],[22,73],[24,79],[26,85],[28,90],[30,94],[32,97],[34,99],[36,100]];
+  const X=m=>L+(m/36)*(W-L-R), Y=p=>H-B-(p/100)*(H-T-B);
+  const line=(pts,color,dash)=>`<polyline points="${pts.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" ${dash?'stroke-dasharray="6 5"':''} stroke-linecap="round"/>`;
+  let g='';
+  for(let p=0;p<=100;p+=25) g+=`<line x1="${L}" y1="${Y(p)}" x2="${W-R}" y2="${Y(p)}" stroke="#edeef4"/><text x="${L-8}" y="${Y(p)+4}" font-size="10" fill="#9aa0b5" text-anchor="end">${p}%</text>`;
+  for(let m=0;m<=36;m+=6) g+=`<text x="${X(m)}" y="${H-B+16}" font-size="10" fill="#9aa0b5" text-anchor="middle">M${m}</text>`;
+  g+=`<line x1="${X(14)}" y1="${T}" x2="${X(14)}" y2="${H-B}" stroke="#c9cde8" stroke-dasharray="3 4"/><text x="${X(14)+5}" y="${T+10}" font-size="10" fill="#5b64ad" font-weight="700">today · M14</text>`;
+  g+=line(plan,'#bcbdc0')+line(fcst,'#d64545',true)+line(act,'#1fb25a');
+  g+=`<circle cx="${X(14)}" cy="${Y(41.8)}" r="4.5" fill="#1fb25a"/>`;
+  svg.innerHTML=g;
+})();
+
+/* ---------- heat map ---------- */
+(function(){
+  const cells=[
+    0,0,1,1,2,
+    0,1,1,2,1,
+    1,2,3,2,1,
+    1,2,2,1,0,
+    0,1,1,0,0
+  ];
+  const colors=['#e8eaf3','#cfd6ee','#e8a13c','#e07b39','#d64545'];
+  const sev=[[0,1,2,3,4],[0,1,2,3,3],[0,1,2,2,3],[0,0,1,2,2],[0,0,0,1,1]];
+  const el=document.getElementById('heat');
+  let html='';
+  for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+    const n=cells[r*5+c], s=sev[r][c];
+    html+=`<div style="background:${n? colors[s] : '#f2f3f8'};color:${s<2?'#6b7280':'#fff'}">${n||''}</div>`;
+  }
+  el.innerHTML=html;
+})();
+
+/* ---------- chat ---------- */
+const CANNED=[
+`<b>Subcontractors threatening first oil, ranked by schedule exposure:</b>
+1. <b>PT Sinar Fabrikasi</b> — piping spools 18 days late, ON the critical path, financial distress signals active. Every further week ≈ 1 week on first oil.
+2. <b>RotaBearing BV</b> — turret bearing forecast 2 weeks beyond need-by float. Slip is not yet on the critical path but has consumed 71% of its buffer.
+3. <b>Meridian E&I</b> — recovering; no first-oil impact if the current crew level holds.
+
+Recommended this week: expediting visit to Rotterdam and a parallel-sourcing decision on spool batches 10+.
+Sources: P6 export 28 Jun · expediting #14 · subcontract registers`,
+`<b>Steering committee summary drafted</b> (12 slides, from live data as of this morning):
+• Executive dashboard: CPI 0.96 · SPI 0.91 · EAC –US$26M · first oil +3 wks
+• 3 decisions requested: invoice hold (US$1.4M), expediting visit, MoC-048
+• Risk movement: +2 new, 1 closure candidate releasing US$2.3M contingency
+
+Ready for the PMO to review and edit. Assembly time: 40 seconds instead of 2 days of copy-paste.`,
+`<b>Silent money leaks detected this quarter:</b>
+• US$1.4M — invoice vs verified progress gap (PT Sinar #2231)
+• US$640k — recoverable welding rework back-charge, draft letter ready
+• US$310k — duplicate standby claim (YS-0455 / VOR-112)
+• ~US$800k/quarter — unpriced MoCs booking engineering hours to overhead (9 MoCs open)
+
+Total identified: <b>≈ US$3.2M</b>, roughly 12× the annual run cost of this system.
+Sources: AP ledger · NCR log · MoC register · timesheets`
+];
+let cannedIdx=0;
+const SUGG=["Which subcontractors put first oil at risk?","Draft the monthly steering committee summary","Where are we losing money silently?"];
+function pushMsg(cls,html){
+  const log=document.getElementById('chatlog');
+  const d=document.createElement('div'); d.className='msg '+cls; d.innerHTML=html;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+function askSuggestion(i){
+  pushMsg('user',SUGG[i]);
+  setTimeout(()=>pushMsg('ai',CANNED[i]),600);
+}
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const q=inp.value.trim(); if(!q) return;
+  inp.value='';
+  pushMsg('user',q);
+  setTimeout(()=>pushMsg('ai',CANNED[cannedIdx%CANNED.length]),600);
+  cannedIdx++;
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
